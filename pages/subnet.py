@@ -14,43 +14,8 @@ class SelectSubnetPage(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout()
 
-        self.setStyleSheet("""
-            QWidget {
-                color: #00ff00;
-                background-color: #000;
-                font-family: 'Orbitron', sans-serif;
-            }
-            QRadioButton {
-                color: #00ff00; /* Set the text color */
-                background-color: #000; /* Set the background color */
-                font-size: 16px;
-            }
-            QRadioButton::indicator {
-                width: 20px; /* Width of the radio button */
-                height: 20px; /* Height of the radio button */
-            }
-            QRadioButton::indicator:checked {
-                background-color: #00ff00; /* Color when the radio button is checked */
-            }
-            QRadioButton::indicator:unchecked {
-                background-color: #333; /* Color when the radio button is unchecked */
-            }
-            QRadioButton:hover {
-                background-color: #005500;
-            }
-            QPushButton {
-                border: 2px solid #00ff00;
-                border-radius: 15px;
-                min-height: 30px;
-                font-size: 16px;
-            }
-            QPushButton:hover {
-                background-color: #005500;
-            }
-        """)
-
         label = QLabel("Select Subnet to Mine On", self)
-        label.setFont(QFont("Orbitron", 18, QFont.Bold))
+        label.setFont(QFont("Georgia", 18, QFont.Bold))
         layout.addWidget(label)
 
         # Radio buttons
