@@ -1,4 +1,4 @@
-import sys
+import os
 import json
 import requests
 
@@ -8,8 +8,8 @@ import bittensor as bt
 
 
 from PyQt5.QtWidgets import QPushButton, QVBoxLayout,QHBoxLayout, QWidget, QLabel, QPushButton, QGroupBox,QMessageBox
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QDesktopServices
+from PyQt5.QtCore import Qt,QUrl
 import pyqtgraph as pg
 
 
@@ -18,48 +18,83 @@ import pyqtgraph as pg
 class SelectDashboardPage(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
-
-        if not parent.wallet_details:
-            with open(f'{parent.wallet_path}/hotkeys/default', 'r') as f:
-                my_wallet = json.load(f)
-
-            if my_wallet['ss58Address'] in parent.subnet.hotkeys:
-                uid = parent.subnet.hotkeys.index(my_wallet['ss58Address'])
-            else:
-                warning_msg = f"You are not registered would you like to "
-                reply = QMessageBox.warning(self, "Warning", warning_msg, QMessageBox.Ok | QMessageBox.Cancel)
-
+              # earnings infomation
+        url = "https://taostats.io/data.json"
+        response = requests.get(url)
+        taostats = json.loads(response.content)
+        price = float(taostats[0]['price'])  
     
-            #     parent.wallet_details = {
-            #     'coldkey' : parent.subnet.coldkeys[uid],
-            #     'hotkey' : parent.subnet.hotkeys[uid],
-            #     'uid' : uid,
-            #     'active' : parent.subnet.active.tolist()[uid],
-            #     'stake' : parent.subnet.stake.tolist()[uid],
-            #     'rank' : parent.subnet.ranks.tolist()[uid],
-            #     'trust' : parent.subnet.trust.tolist()[uid],
-            #     'consensus' : parent.subnet.consensus.tolist()[uid],
-            #     'incentive' : parent.subnet.incentive.tolist()[uid],
-            #     'dividends' : parent.subnet.dividends.tolist()[uid],
-            #     'vtrust' : parent.subnet.validator_trust.tolist()[uid]
-            # }
+            # with open(f'{parent.wallet_path}/hotkeys/default', 'r') as f:
+            #     my_wallet = json.load(f)
+        with open(f'{os.path.join(parent.wallet_path)}/coldkey', 'r') as f:
+            address_json = json.load(f)
+        coldkey = address_json['ss58Address']
 
-            # else:
-            #     print(f"{my_wallet['ss58Address']} not registered")
-            #     uid = 1
-            #     parent.wallet_details = {
-            #     'coldkey' : parent.subnet.coldkeys[uid],
-            #     'hotkey' : parent.subnet.hotkeys[uid],
-            #     'uid' : uid,
-            #     'active' : parent.subnet.active.tolist()[uid],
-            #     'stake' : parent.subnet.stake.tolist()[uid],
-            #     'rank' : parent.subnet.ranks.tolist()[uid],
-            #     'trust' : parent.subnet.trust.tolist()[uid],
-            #     'consensus' : parent.subnet.consensus.tolist()[uid],
-            #     'incentive' : parent.subnet.incentive.tolist()[uid],
-            #     'dividends' : parent.subnet.dividends.tolist()[uid],
-            #     'vtrust' : parent.subnet.validator_trust.tolist()[uid]
-            # }
+        if coldkey in parent.subnet.coldkeys:
+            uid = parent.subnet.coldkeys.index(coldkey)
+            wallet_bal_tao = parent.subnet.stake.tolist()[uid]
+
+        else:
+            wallet_bal_tao = 0
+            registration_cost = parent.subtensor.burn(netuid = 25)
+            warning_msg = f"You are not registered on bitcurrent.\nWould you like to Register?"
+            reply = QMessageBox.question(self, "Warning", warning_msg, QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                wallet = bt.wallet(name = parent.wallet_name, path = parent.wallet_path)
+                wallet_bal = parent.subtensor.get_balance(address = coldkey)
+            # check wallet balance
+                if wallet_bal < registration_cost:
+                    warning_msg = f"You don't have sufficient funds in your account.\nWould you like to add funds to you account?"
+                    reply = QMessageBox.warning(self, "Warning", warning_msg, QMessageBox.Yes | QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        QDesktopServices.openUrl(QUrl("https://bittensor.com/wallet"))
+                    # else:
+                    #     parent.show_start_page
+                else:
+                    success = self.subtensor.burned_register(wallet = wallet, netuid=25)
+                    if success:
+                        info_msg = f"You have been registered on Bitcurrent?"
+                        ok = QMessageBox.information(self, "Warning", info_msg)
+                        # if ok:
+                        #     parent.show_start_page
+
+
+            # if yes call the fuction to register
+            # go back to the loop. While True
+
+            # if no then show zero zero as info and underneth have asteriks saying you are not yet registered
+
+
+        #     parent.wallet_details = {
+        #     'coldkey' : parent.subnet.coldkeys[uid],
+        #     'hotkey' : parent.subnet.hotkeys[uid],
+        #     'uid' : uid,
+        #     'active' : parent.subnet.active.tolist()[uid],
+        #     'stake' : parent.subnet.stake.tolist()[uid],
+        #     'rank' : parent.subnet.ranks.tolist()[uid],
+        #     'trust' : parent.subnet.trust.tolist()[uid],
+        #     'consensus' : parent.subnet.consensus.tolist()[uid],
+        #     'incentive' : parent.subnet.incentive.tolist()[uid],
+        #     'dividends' : parent.subnet.dividends.tolist()[uid],
+        #     'vtrust' : parent.subnet.validator_trust.tolist()[uid]
+        # }
+
+        # else:
+        #     print(f"{my_wallet['ss58Address']} not registered")
+        #     uid = 1
+        #     parent.wallet_details = {
+        #     'coldkey' : parent.subnet.coldkeys[uid],
+        #     'hotkey' : parent.subnet.hotkeys[uid],
+        #     'uid' : uid,
+        #     'active' : parent.subnet.active.tolist()[uid],
+        #     'stake' : parent.subnet.stake.tolist()[uid],
+        #     'rank' : parent.subnet.ranks.tolist()[uid],
+        #     'trust' : parent.subnet.trust.tolist()[uid],
+        #     'consensus' : parent.subnet.consensus.tolist()[uid],
+        #     'incentive' : parent.subnet.incentive.tolist()[uid],
+        #     'dividends' : parent.subnet.dividends.tolist()[uid],
+        #     'vtrust' : parent.subnet.validator_trust.tolist()[uid]
+        # }
     
         self.setStyleSheet("""
             QPushButton {
@@ -111,21 +146,8 @@ class SelectDashboardPage(QWidget):
         summary_group.setAlignment(Qt.AlignLeft) 
         summary_layout = QHBoxLayout(summary_group)
 
-        # earnings infomation
-        url = "https://taostats.io/data.json"
-        response = requests.get(url)
-        taostats = json.loads(response.content)
-        price = float(taostats[0]['price'])
-        
-        # get user stake
-        # if uid:
-        #     wallet_bal_tao = parent.subnet.stake.tolist()[uid]
-        # else: 
-        #     wallet_bal_tao = 0
-
-        wallet_bal_tao = 1.0
+  
         wallet_bal_dol = round(wallet_bal_tao * price, 2)
-
         earnings_group = QGroupBox()
         earnings_layout = QVBoxLayout(earnings_group)
         earnings_layout.addWidget(QLabel("Wallet Balance",font=QFont('Georgia', 10)))
