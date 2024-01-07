@@ -31,11 +31,7 @@ class MiningWizard(QMainWindow):
         ##
         self.subtensor = bt.subtensor(network = 'test')
         self.subnet = self.subtensor.metagraph(netuid = 25) #bt.metagraph(netuid = 25)
-
-      
-        print(self.subtensor)
-        print(self.subnet)
-
+        
         # self.neuron = None
         
         self.setWindowTitle("Plug and play miner")
@@ -53,6 +49,7 @@ class MiningWizard(QMainWindow):
         self.central_widget.addWidget(self.get_wallet_page)
 
         # initialise vars
+
         self.wallet_name = None
         self.wallet_path = None
 
@@ -73,25 +70,19 @@ class MiningWizard(QMainWindow):
     def show_get_wallet_page(self):
         self.central_widget.setCurrentWidget(self.get_wallet_page)
 
-    # def show_select_subnet_page(self):
-    #     self.select_subnet_page = SelectSubnetPage(self)
-    #     self.central_widget.addWidget(self.select_subnet_page)
-    #     self.central_widget.setCurrentWidget(self.select_subnet_page)
-
-    # def show_select_neuron_page(self):
-    #     self.select_neuron_page = SelectNeuronPage(self)
-    #     self.central_widget.addWidget(self.select_neuron_page)
-    #     self.central_widget.setCurrentWidget(self.select_neuron_page)
-
     def show_dashboard_page(self):
-        if self.wallet_name == None:
+        if self.wallet_name is not None:
+            self.dashboard_page = SelectDashboardPage(self)
+            self.central_widget.addWidget(self.dashboard_page)
+            self.central_widget.setCurrentWidget(self.dashboard_page)
+        else:
             self.wallet_name, ok = QInputDialog.getText(self, "Wallet Name", "Please confirm wallet name:")
             while True:
                 if not ok:
                     break  # Break out of the loop if the user cancels
                 try:
                     self.wallet_path = search_directory(".", self.wallet_name)
-                    print(self.wallet_path)
+                    # print(self.wallet_path)
                     if self.wallet_path:
                         self.dashboard_page = SelectDashboardPage(self)
                         self.central_widget.addWidget(self.dashboard_page)
@@ -100,15 +91,17 @@ class MiningWizard(QMainWindow):
                 except FileNotFoundError as e:
                     new_directory, ok = QInputDialog.getText(self, "Wallet not found", str(e) + "\nEnter a valid wallet name:")
                     if not ok:
-                        print("User canceled")
+                        # print("User canceled")
                         break  # Break out of the loop if the user cancels
                     self.wallet_name = new_directory  # Update the wallet name for the next iteration
-
-        else:
-            self.dashboard_page = SelectDashboardPage(self)
-            self.central_widget.addWidget(self.dashboard_page)
-            self.central_widget.setCurrentWidget(self.dashboard_page)
-
+    
+    def show_dashboard_page_from_mining(self, wallet_name):
+            self.wallet_name = wallet_name
+            self.wallet_path = search_directory(".", self.wallet_name)
+            if self.wallet_path:
+                self.dashboard_page = SelectDashboardPage(self)
+                self.central_widget.addWidget(self.dashboard_page)
+                self.central_widget.setCurrentWidget(self.dashboard_page)
    
     def show_wallet_page(self):
         if self.wallet_name != None:

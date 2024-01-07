@@ -23,3 +23,17 @@ def search_directory(start_directory, target_directory):
     raise FileNotFoundError(f"Directory '{target_directory}' not found in or above '{start_directory}'")
 
 
+def configure_logger(log_file):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+    # Create a file handler that logs to the file without rotation
+    file_handler = logging.FileHandler(log_file)
+    
+    # You can configure a formatter if needed
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+
+    return logger

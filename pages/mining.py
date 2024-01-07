@@ -10,28 +10,29 @@ from datetime import datetime
 from PyQt5.QtWidgets import  (QPushButton, QVBoxLayout,QHBoxLayout, QWidget, QLabel, 
                               QPushButton,QMessageBox, QLineEdit, QTextEdit, )
 from PyQt5.QtGui import QFont,QDesktopServices
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, pyqtSignal,QObject
 
 
 class MiningPage(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
+        self.parent = parent
         layout = QVBoxLayout()
 
         label = QLabel("Mining", self)
         label.setFont(QFont("Georgia", 16))
         layout.addWidget(label)
-
+        # print('parent subtensor:', self.parent.subtensor)
+        # print('parent subnet:', self.parent.subnet)
+        
+        # initiate subtensor and subnet
         self.subtensor = parent.subtensor
         self.subnet = parent.subtensor.metagraph(netuid = 25)
+        self.registration_cost = self.subtensor.burn(netuid = 25)
+        self.wallet_name = self.parent.wallet_name
+        print('1,', self.wallet_name, parent.wallet_name, self.parent.wallet_name)
 
-        # label_entry = QLabel("Enter Your Bittensor Address", self)
-        # label_entry.setFont(QFont("Georgia", 12))
-        # layout.addWidget(label_entry)
-
-        # self.entry = QLineEdit(self)
-        # layout.addWidget(self.entry)
-
+        #Page buttons
         self.start_button = QPushButton("Start Mining", self)
         self.start_button.clicked.connect(self.start_mining)
         layout.addWidget(self.start_button)
@@ -42,9 +43,9 @@ class MiningPage(QWidget):
         layout.addWidget(self.output)
 
         h_layout = QHBoxLayout()
-        previous_button = QPushButton("Previous", self)
-        previous_button.clicked.connect(parent.show_start_page)
-        h_layout.addWidget(previous_button)
+        dash_button = QPushButton("Dashboard", self)
+        dash_button.clicked.connect(parent.show_dashboard_page)
+        h_layout.addWidget(dash_button)
         
         # Spacer to push the Previous button to the left
         h_layout.addStretch()
@@ -52,44 +53,55 @@ class MiningPage(QWidget):
 
         self.setLayout(layout)
 
+        # parent.wallet_name = parent.wallet_name
+
     def start_mining(self):
         # this address should be public key? doesn't require user to specify
-        with open(f'{os.path.join(self.parent().wallet_path)}/coldkey', 'r') as f:
+        with open(f'{os.path.join(self.parent.wallet_path)}/coldkey', 'r') as f:
             address_json = json.load(f)
-        address = address_json['ss58Address']
-        if address:
-            self.output.append(f"{datetime.now()}: Address for {self.parent().wallet_name} is valid!\n")
-            time.sleep(5)
+        self.coldkey = address_json['ss58Address']
+        if self.coldkey:
+            self.output.append(f"{datetime.now()}: Address for {self.parent.wallet_name} is valid!\n")
+            # time.sleep(5)
             self.output.append(f"{datetime.now()}: Checking for registration on subnet..")
-            time.sleep(5)
-            if address in self.subnet.coldkeys:
+            # time.sleep(5)
+            if self.coldkey in self.subnet.coldkeys:
                 self.output.append(f"{datetime.now()}: You are already registered and ready to mine\n")
                 # start mining
             else:
-                time.sleep(5)
+                # time.sleep(5)
                 self.output.append(f"{datetime.now()}: You are NOT registered on the subnet!!\n")
-                registration_cost = self.subtensor.burn(netuid = 25)
-                time.sleep(5)
-                warning_msg = f"Registration cost for Bitcurrent is {registration_cost}\n Do you want to register?\nNote this amount will be deducted from your wallet."
+                # time.sleep(5)
+                warning_msg = f"Registration cost for Bitcurrent is {self.registration_cost}\n Do you want to register?\nNote this amount will be deducted from your wallet."
                 reply = QMessageBox.warning(self, "Warning", warning_msg, QMessageBox.Ok | QMessageBox.Cancel)
-                time.sleep(5)
                 if reply == QMessageBox.Ok:
-                    self.output.append(f"{datetime.now()}:Registering your wallet on bitcurrent..\n")
-                    wallet = bt.wallet(name = self.parent().wallet_name, path = self.parent().wallet_path)
-                    wallet_bal = self.subtensor.get_balance(address = address)
-                    # check wallet balance
-                    if wallet_bal < registration_cost:
-                        self.output.append(f"{datetime.now()}: You don't have sufficient funds in your account\n")
-                        warning_msg = f"Would you like to add funds to you account?"
-                        reply = QMessageBox.warning(self, "Warning", warning_msg, QMessageBox.Yes | QMessageBox.No)
-                        if reply == QMessageBox.Yes:
-                            QDesktopServices.openUrl(QUrl("https://bittensor.com/wallet"))
-                    else:
-                        success = self.subtensor.burned_register(wallet = wallet, netuid=25)
-                        if success:
-                            self.output.append('Registeration complete!!!')
-                        # run script   
+                    self.output.append(f"{self.parent.wallet_name}")
+                    self.register_on_subnet()
+                    
         else:
             QMessageBox.warning(self, "Warning", "You don't have a valid address.")
+        print('2,', self.wallet_name, self.parent.wallet_name)
+    
+        self.parent.wallet_name = self.parent.wallet_name
+        print('3,', self.wallet_name, self.parent.wallet_name)
+        
+      
+    
+
+    def register_on_subnet(self):
+        self.wallet = bt.wallet(name = self.parent.wallet_name, path = self.parent.wallet_path)
+        wallet_bal = self.subtensor.get_balance(address = self.coldkey)
+        # check wallet balance
+        if wallet_bal < self.registration_cost:
+            self.output.append(f"{datetime.now()}: You don't have sufficient funds in your account\n")
+            warning_msg = f"You don't have sufficient funds in your account\nWould you like to add funds to you account?"
+            reply = QMessageBox.warning(self, "Warning", warning_msg, QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                QDesktopServices.openUrl(QUrl("https://bittensor.com/wallet"))             
+        else:
+            success = self.subtensor.burned_register(wallet = self.wallet, netuid=25)
+            if success:
+                self.output.append(f'{datetime.now()}: Registeration complete!!!')
+    
 
 

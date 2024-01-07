@@ -11,6 +11,7 @@ class GetWalletPage(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         layout = QVBoxLayout()
+        self.parent = parent
 
         # Header Group with links
         header_group = QGroupBox("BitCurrent", self)
@@ -115,16 +116,14 @@ class GetWalletPage(QWidget):
     def get_full_wallet_path(self):
         # Get the wallet name from the input field
         self.wallet_name = self.wallet_name_input.text()
-        print(self.wallet_name)
-
         # Check if the wallet name is not empty
         if self.wallet_name:
             # Construct the full path based on the wallet name
             self.full_wallet_path = os.path.join(self.wallet_path_input.text(), self.wallet_name)
             print(self.full_wallet_path)
 
-            self.parent().wallet_name = self.wallet_name
-            self.parent().wallet_path = self.full_wallet_path
+            self.parent.wallet_name = self.wallet_name
+            self.parent.wallet_path = self.full_wallet_path
 
             # Optionally, you can check if the path exists
             if not os.path.exists(self.full_wallet_path):
