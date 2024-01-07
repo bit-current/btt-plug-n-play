@@ -9,7 +9,7 @@ import bittensor as bt
 
 from PyQt5.QtWidgets import QPushButton, QVBoxLayout,QHBoxLayout, QWidget, QLabel, QPushButton, QGroupBox,QMessageBox
 from PyQt5.QtGui import QFont, QDesktopServices
-from PyQt5.QtCore import Qt,QUrl, QProcess, QProcessEnvironment
+from PyQt5.QtCore import Qt,QUrl, QProcess, QProcessEnvironment, QTimer, QDateTime
 import pyqtgraph as pg
 
 
@@ -17,7 +17,7 @@ import pyqtgraph as pg
 class SelectDashboardPage(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
-              # earnings infomation
+       # earnings infomation
         url = "https://taostats.io/data.json"
         response = requests.get(url)
         taostats = json.loads(response.content)
@@ -39,10 +39,7 @@ class SelectDashboardPage(QWidget):
                 font-family: Georgia;
             }
         """)
-
-
-        self.mining_process = None
-        
+    
         layout = QVBoxLayout()
         # Header Group with links
         header_group = QGroupBox("BitCurrent")
@@ -68,18 +65,10 @@ class SelectDashboardPage(QWidget):
         log_button = QPushButton("Log Out")
         header_layout.addWidget(log_button)
 
-
-        test_group = QGroupBox()
-        test_layout = QVBoxLayout(test_group)
-        test_layout.addWidget(QPushButton("Withdraw Earnings"))
-        test_layout.addWidget(QPushButton("Stop Mining"))
-        header_layout.addWidget(test_group)
-
-        # test_group.setFont(QFont("Orbitron", 18, QFont.Bold))
-
-
         layout.addWidget(header_group)
+            
 
+        
         # Summary Stats
         summary_group = QGroupBox('Welcome Bill')
         summary_group.setFont(QFont("Georgia", 26, QFont.Bold, italic=True))
@@ -117,14 +106,31 @@ class SelectDashboardPage(QWidget):
         summary_layout.addWidget(cpu_info_group)
 
 
-        # CPU USAGE
+        # GPU USAGE
         gpu_info_group = QGroupBox()
         gpu_info_layout = QVBoxLayout(gpu_info_group)
         gpu_info_layout.addWidget(QLabel("GPU Usage", font=QFont('Georgia', 10)))
         gpu_info_layout.addWidget(QLabel("54.3%", font= QFont('Georgia', 20, QFont.Bold)))
         gpu_info_layout.addWidget(QLabel(" ", font= QFont('Georgia', 10)))
-        
         summary_layout.addWidget(gpu_info_group)
+        
+
+        # Timer
+        timer_group = QGroupBox()
+        timer_info_layout = QVBoxLayout(timer_group)
+        timer_info_layout.addWidget(QLabel("Live Mining Time", font=QFont('Georgia', 10)))
+        self.timer_label = QLabel("0h: 0m: 0s", self)
+        self.timer_label.setFont(QFont("Georgia", 20, QFont.Bold)) 
+        timer_info_layout.addWidget(self.timer_label)
+        timer_info_layout.addWidget(QLabel(" ", font= QFont('Georgia', 10)))
+        
+    
+        self.mining_process = None
+        self.start_time = QDateTime.currentDateTime()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_timer)
+        summary_layout.addWidget(timer_group)
+        
 
 
         layout.addWidget(summary_group)
@@ -181,27 +187,53 @@ class SelectDashboardPage(QWidget):
         # env.insert("KEY", "VALUE")
         self.mining_process.setProcessEnvironment(env)
 
-        # Start the process
-        self.mining_process.start("python", [script_path])
+        self.start_time = QDateTime.currentDateTime()
+        self.timer.start(1000)  # Update timer every second
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_timer)
 
-        self.mine_button.setText("Stop Mining")    
+        # # Start the process
+        self.mining_process.start("python", [script_path])
+        self.mining_process.finished.connect(self.stop_mining)
+        # self.start_timer()
+        self.mine_button.setText("Stop Mining") 
+        
+       
 
 
     def stop_mining(self):
         if self.mining_process is not None and self.mining_process.state() == QProcess.Running:
             self.mining_process.terminate()
+            self.timer.stop()
             self.mining_process.waitForFinished()
             self.mining_process = None
-
             self.mine_button.setText("Start Mining")
 
     def handle_output(self):
         # Handle output from the mining script if needed
+        self.stop_timer()
         output = self.mining_process.readAllStandardOutput().data().decode("utf-8")
         self.mine_button.setText("Start Mining")
 
         print(output)
+    def start_timer(self):
+        # Start the timer with a 1-second interval
+        self.timer.start(1000)
 
+    def update_timer(self):
+        # This function is called every second to update the timer display
+        # You can update your timer display logic here
+        if self.mining_process is not None and self.mining_process.state() == QProcess.Running:
+            current_time = QDateTime.currentDateTime()
+            elapsed_time = self.start_time.secsTo(current_time)
+            hours = elapsed_time // 3600
+            minutes = (elapsed_time % 3600) // 60
+            seconds = elapsed_time % 60
+            self.timer_label.setText(f"{hours}h: {minutes}m: {seconds}s")
+
+    def stop_timer(self):
+        # Stop the timer
+        self.timer.stop()
 
 
 

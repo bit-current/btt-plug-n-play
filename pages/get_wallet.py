@@ -20,10 +20,11 @@ class GetWalletPage(QWidget):
         header_layout = QHBoxLayout(header_group)
         
         home_button = QPushButton("Home")
-        home_button.clicked.connect(parent.show_start_page)
+        home_button.clicked.connect(self.parent.show_start_page)
         header_layout.addWidget(home_button)
 
         wallet_button = QPushButton("Wallet")
+        wallet_button.clicked.connect(self.parent.show_wallet_page)
         header_layout.addWidget(wallet_button)
 
 
@@ -33,14 +34,6 @@ class GetWalletPage(QWidget):
         log_button = QPushButton("Log Out")
         header_layout.addWidget(log_button)
 
-
-        test_group = QGroupBox()
-        test_layout = QVBoxLayout(test_group)
-        test_layout.addWidget(QPushButton("Withdraw Earnings"))
-        test_layout.addWidget(QPushButton("Stop Mining"))
-        header_layout.addWidget(test_group)
-        header_group.setFixedHeight(150)
-        
         layout.addWidget(header_group)
 
 
